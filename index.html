@@ -6,18 +6,14 @@
     <title>Rive PNG Renderer</title>
 </head>
 <body>
+    <h1>Rive PNG Sequence Renderer</h1>
     <form>
-      <label for="rivFile">Select .riv files: </label><br />
-      <input type="file" id="rivFile"><br />
-      <hr />
-      <label for="animationName">Type in animation name(e.g. idle): </label><br />
-      <input type="text" id="animationName" value="Untitled 1"><br />
-      <hr />
-      <label for="size">Choose resolution of render. This number is multiplied with the artboard resolution you chose.(e.g. 1.5): </label><br />
-      <input type="text" id="size" value="1">
+      <label for="rivFile">Append .riv files to render queue: </label><br />
+      <input type="file" id="rivFile" accept=".riv" onchange="ChoseFiles(this.files)" multiple><br /><br />
     </form>
     <hr />
-    <button id="renderButton" onclick="Render()">Render</button>
+    <div id="fileList"></div>
+    <button id="renderButton" onclick="Render()" style="display: none">Render</button>
     <div id="status"></div>
     <canvas id="riveCanvas" style="display: none"></canvas>
 </body>

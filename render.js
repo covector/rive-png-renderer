@@ -1,21 +1,40 @@
 const Render = () => {
-    if (!Validate()) { return; }
     Start();
     Rive({
         locateFile: (file) => 'https://unpkg.com/rive-canvas@0.6.7/' + file,
-    }).then((rive) => 
-        FileToUint8Array(rive)
-    ).then((res) => {
-        // load animation
-        let rive = res.rive;
-        let file = rive.load(res.array);
+    }).then((rive) =>{
+        for (let i = 0; i < fileNames.length; i++){
+            RenderIndie(rive, fileNames[i]).then((fileName)=>{
+                Done(fileName);
+            }, (fileName) =>{
+                Invalid(fileName);
+            });
+        }
+    });
+};
+
+const RenderIndie = (rive, fileName) => new Promise((res, rej) => {
+    StartIndie(fileName);
+    // load animation
+    FileToUint8Array(files[fileName]).then((byte) => {
+        let file = rive.load(byte);
         let artboard = file.defaultArtboard();
-        let animationName = document.getElementById("animationName").value;
+        let animationName = document.getElementById("animationName_"+fileName).value;
         let anim = artboard.animation(animationName);
+        if (!anim){
+            document.getElementById("status_"+fileName).textContent = "Invalid animation name"
+            rej(fileName);
+            return;
+        }
         let Instance = new rive.LinearAnimationInstance(anim);
-        let canvas = document.getElementById('riveCanvas');
         let dim = artboard.bounds;
-        let resMult = parseFloat(document.getElementById('size').value);
+        let resMult = parseFloat(document.getElementById("size_"+fileName).value);
+        if (!resMult){
+            document.getElementById("status_"+fileName).textContent = "Invalid resolution multiplier"
+            rej(fileName);
+            return;
+        }
+        let canvas = document.createElement("CANVAS");
         canvas.width = dim.maxX * resMult;
         canvas.height = dim.maxY * resMult;
         let ctx = canvas.getContext('2d');
@@ -30,7 +49,7 @@ const Render = () => {
         var forLoop = setInterval(()=>{
             i++
             if (i < duration + 1){
-                Progress(i + 1, duration + 1)
+                Progress(fileName, i + 1, duration + 1)
                 // update canvas
                 let elapsedTime = i == 0 ? 0 : 1 / 60;
                 Instance.advance(elapsedTime);
@@ -53,35 +72,32 @@ const Render = () => {
             }
             else{
                 clearInterval(forLoop);
+                canvas.remove();
                 // callback
-                Zipping();
+                Zipping(fileName);
                 zip.generateAsync({type:"blob"})
                 .then(function(content) {
-                    saveAs(content, "render.zip");
-                    Done();
+                    saveAs(content, fileName+"_render.zip");
+                    res(fileName);
+                    return;
                 });
             }
         },1);
     });
-};
+});
 
-const Validate = () => {
-    return true;
-}
-
-const FileToUint8Array = (rive) => new Promise((res, rej) => {
+const FileToUint8Array = (file) => new Promise((res, rej) => {
     // a code from stack overflow idk what does it do
     let reader = new FileReader();
-    let rivFile = document.getElementById("rivFile").files[0];
     reader.onerror = function(event) {
         reader.abort();
-        rej(reader.error);
+        console.log(reader.error);
     }; 
-    reader.readAsArrayBuffer(rivFile);
+    reader.readAsArrayBuffer(file);
     reader.onloadend = (evt) => {
         if (evt.target.readyState == FileReader.DONE) {
             let arrayBuffer = evt.target.result
-            res({rive, array: new Uint8Array(arrayBuffer)});
+            res(new Uint8Array(arrayBuffer));
         }
     }
 });
@@ -94,21 +110,129 @@ const Pad = (number, digit) => {
     return stringOut;
 }
 
+var files = [];
+var fileNames = [];
+
+const ChoseFiles = (fileList) => {
+    for (let i = 0; i < fileList.length; i++){
+        let fileNameMatch = fileList[i].name.match(/.*.(?=.riv)/);
+        let fileName = fileNameMatch ? fileNameMatch[0] : null;
+        if (fileName && !files[fileName]){
+            files[fileName] = fileList[i];
+            fileNames.push(fileName);
+            AddFile(fileName);
+        }
+    }
+    RenderButtonVisibility();
+}
+
+const AddFile = (fileName) => {
+    // create section
+    let container = document.createElement("DIV");
+    container.id = "container_"+fileName;
+
+    let header = document.createElement("H2");
+    header.textContent = fileName;
+
+    let form = document.createElement("FORM");
+
+    let animationName = "animationName_"+fileName;
+    let animationNameLabel = document.createElement("LABEL");
+    animationNameLabel.textContent = "Type in animation name(e.g. idle): "; 
+    animationNameLabel.for = animationName;
+    let animationNameInput = document.createElement("INPUT");
+    animationNameInput.type = "text";
+    animationNameInput.id = animationName;
+    animationNameInput.value = "Untitled 1";
+
+    let size = "size_"+fileName;
+    let sizeLabel = document.createElement("LABEL");
+    sizeLabel.textContent = "Resolution multiplier of the render. This number is multiplied with the artboard resolution you chose.(e.g. 1.5): "; 
+    sizeLabel.for = size;
+    let sizeInput = document.createElement("INPUT");
+    sizeInput.type = "text";
+    sizeInput.id = size;
+    sizeInput.value = "1";
+
+    let br = () => document.createElement("BR");
+    let hr = document.createElement("HR");
+
+    let status = document.createElement("div");
+    status.id = "status_"+fileName;
+
+    let button = document.createElement("BUTTON");
+    button.id = "button_"+fileName;
+    button.textContent = "Remove";
+    button.onclick = () => {RemoveFile(`${fileName}`);}
+
+    form.append(animationNameLabel, br(), animationNameInput, br(), br(), sizeLabel, br(), sizeInput, br(), br());
+    container.append(header, form, status, button, hr);
+
+    document.getElementById("fileList").append(container);
+}
+
+const RemoveFile = (fileName) => {
+    files[fileName] = null;
+    fileNames.splice(fileNames.indexOf(fileName), 1);
+    document.getElementById("container_"+fileName).remove();
+    RenderButtonVisibility();
+}
+
+const RenderButtonVisibility = () => {
+    if (fileNames.length == 0){
+        document.getElementById("renderButton").style.display = "none";
+    }
+    else{
+        document.getElementById("renderButton").style.display = "block";
+    }
+}
+
+var finished = 0;
+var total = 1;
+var invalidTotal = 0;
+
 const Start = () => {
-    document.getElementById("status").textContent = "Initializing...";
+    document.getElementById("status").textContent = "Rendering...";
     document.getElementById("renderButton").style.display = "none";
+    finished = 0;
+    total = fileNames.length;
+    invalidTotal = 0;
 }
 
-const Progress = (current, total) => {
-    let text = `${current}/${total} Done; ${Math.round(100 * current/total)} %`;
-    document.getElementById("status").textContent = text;
+const StartIndie = (fileName) => {
+    document.getElementById("status_"+fileName).textContent = "Initializing...";
+    document.getElementById("button_"+fileName).display = "none";
 }
 
-const Zipping = () => {
-    document.getElementById("status").textContent = "Zipping...";
+const Progress = (fileName, current, total) => {
+    let text = `${current}/${total} frame done; ${Math.round(100 * current/total)} %`;
+    document.getElementById("status_"+fileName).textContent = text;
 }
 
-const Done = () => {
-    document.getElementById("status").textContent = "";
+const Zipping = (fileName) => {
+    document.getElementById("status_"+fileName).textContent = "Zipping...";
+}
+
+const Done = (fileName) => {
+    document.getElementById("status_"+fileName).textContent = "Finished";
+    finished++;
+    document.getElementById("status").textContent = `${finished}/${total} file done`;
+    if (finished == total) {
+        AllDone();
+    }
+    document.getElementById("button_"+fileName).display = "block";
+}
+
+const Invalid = (fileName) => {
+    invalidTotal++;
+    total--;
+    if (finished == total) {
+        AllDone();
+    }
+    document.getElementById("button_"+fileName).display = "block";
+}
+
+const AllDone = () => {
     document.getElementById("renderButton").style.display = "block";
+    document.getElementById("status").textContent = `All files have finished rendering. ${invalidTotal} error occurred`;
 }

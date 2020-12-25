@@ -1,7 +1,7 @@
 # Rive PNG Sequence Renderer
 ## Steps to use
 1. Go to the [webpage](https://covector.github.io/rive-png-renderer/)
-2. Select a .riv file
+2. Select one or more .riv files
 3. Type the animation name
 4. Type the resolution scale
 5. Press Render button
