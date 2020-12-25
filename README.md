@@ -26,7 +26,8 @@ This is a temporary replacement for the Cloud Render feature, which allows you t
 ![step 6a](README_images/step6a.png)
 ![step 6b](README_images/step6b.png)
 
-## Dependencies
+## Credit
+Library used:<br />
 [Rive Runtime](https://github.com/rive-app/rive-wasm)<br />
 [JSZip](https://github.com/Stuk/jszip)<br />
 [FileSaver.js](https://github.com/eligrey/FileSaver.js)
