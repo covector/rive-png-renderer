@@ -10,7 +10,7 @@ This is a website for rendering Rive animation as PNG Image Sequence. This can a
 
 ![step 2](README_images/step2.png)
 
-3. Type the animation names. These must match the ones specified in the Rive animation mode timeline
+3. Type the animation names. This must match the ones specified in the Rive animation mode timeline
 
 ![step 3](README_images/step3.png)
 
@@ -18,14 +18,18 @@ This is a website for rendering Rive animation as PNG Image Sequence. This can a
 
 ![step 4](README_images/step4.png)
 
-5. Press the Render button
+5. Type the frame per second for the output render E.g. if the original animation is set to 60fps in Rive and the fps here is set to 120, the output will have twice the number of frames while keeping the same duration
 
 ![step 5](README_images/step5.png)
 
+5. Press the Render button
+
+![step 6](README_images/step6.png)
+
 6. Download will start automatically after rendering. The browser may ask you whether you would allow multiple files download, this is because a zip file will be generated for each .riv file
 
-![step 6a](README_images/step6a.png)
-![step 6b](README_images/step6b.png)
+![step 7a](README_images/step7a.png)
+![step 7b](README_images/step7b.png)
 
 ## Credit
 Library used:<br />

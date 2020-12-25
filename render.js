@@ -29,8 +29,14 @@ const RenderIndie = (rive, fileName) => new Promise((res, rej) => {
         let Instance = new rive.LinearAnimationInstance(anim);
         let dim = artboard.bounds;
         let resMult = parseFloat(document.getElementById("size_"+fileName).value);
-        if (!resMult){
+        if (!resMult || resMult < 0){
             document.getElementById("status_"+fileName).textContent = "Invalid resolution multiplier"
+            rej(fileName);
+            return;
+        }
+        let fps = parseFloat(document.getElementById("fps_"+fileName).value);
+        if (!fps || fps < 0){
+            document.getElementById("status_"+fileName).textContent = "Invalid frame per second"
             rej(fileName);
             return;
         }
@@ -40,17 +46,18 @@ const RenderIndie = (rive, fileName) => new Promise((res, rej) => {
         let ctx = canvas.getContext('2d');
         let renderer = new rive.CanvasRenderer(ctx);
         // loop through animation and save to zip
-        let duration = anim.duration;
-        let digit = Math.ceil(Math.log10(duration));
+        let duration = anim.duration / anim.fps; // in seconds
+        let totalFrame = fps * duration;
+        let digit = Math.ceil(Math.log10(totalFrame));
         let zip = new JSZip();
         let imgseq = zip.folder("imgseq");
-        // sacrifice a little performance for user friendliness
+        // sacrifice a little performance for displaying progress
         let i = 0;
         var forLoop = setInterval(()=>{
-            if (i < duration + 1){
-                Progress(fileName, i + 1, duration + 1)
+            if (i < totalFrame + 1){
+                Progress(fileName, i + 1, totalFrame + 1)
                 // update canvas
-                let elapsedTime = i == 0 ? 0 : 1 / 60;
+                let elapsedTime = i == 0 ? 0 : 1 / fps;
                 Instance.advance(elapsedTime);
                 Instance.apply(artboard, 1.0);
                 artboard.advance(elapsedTime);
@@ -138,7 +145,7 @@ const AddFile = (fileName) => {
 
     let animationName = "animationName_"+fileName;
     let animationNameLabel = document.createElement("LABEL");
-    animationNameLabel.textContent = "Type in animation name (e.g. idle): "; 
+    animationNameLabel.textContent = "Animation name. This must match the one specified in the Rive timeline. (e.g. idle): "; 
     animationNameLabel.for = animationName;
     let animationNameInput = document.createElement("INPUT");
     animationNameInput.type = "text";
@@ -154,6 +161,15 @@ const AddFile = (fileName) => {
     sizeInput.id = size;
     sizeInput.value = "1";
 
+    let fps = "fps_"+fileName;
+    let fpsLabel = document.createElement("LABEL");
+    fpsLabel.textContent = "Frame per second of the output render (not the input): "; 
+    fpsLabel.for = fps;
+    let fpsInput = document.createElement("INPUT");
+    fpsInput.type = "text";
+    fpsInput.id = fps;
+    fpsInput.value = "60";
+
     let br = () => document.createElement("BR");
     let hr = document.createElement("HR");
 
@@ -165,7 +181,7 @@ const AddFile = (fileName) => {
     button.textContent = "Remove";
     button.onclick = () => {RemoveFile(`${fileName}`);}
 
-    form.append(animationNameLabel, br(), animationNameInput, br(), br(), sizeLabel, br(), sizeInput, br(), br());
+    form.append(animationNameLabel, br(), animationNameInput, br(), br(), sizeLabel, br(), sizeInput, br(), br(), fpsLabel, br(), fpsInput, br(), br());
     container.append(header, form, status, button, hr);
 
     document.getElementById("fileList").append(container);
