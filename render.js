@@ -201,7 +201,7 @@ const Start = () => {
 
 const StartIndie = (fileName) => {
     document.getElementById("status_"+fileName).textContent = "Initializing...";
-    document.getElementById("button_"+fileName).display = "none";
+    document.getElementById("button_"+fileName).style.display = "none";
 }
 
 const Progress = (fileName, current, total) => {
@@ -220,7 +220,7 @@ const Done = (fileName) => {
     if (finished == total) {
         AllDone();
     }
-    document.getElementById("button_"+fileName).display = "block";
+    document.getElementById("button_"+fileName).style.display = "block";
 }
 
 const Invalid = (fileName) => {
@@ -229,7 +229,7 @@ const Invalid = (fileName) => {
     if (finished == total) {
         AllDone();
     }
-    document.getElementById("button_"+fileName).display = "block";
+    document.getElementById("button_"+fileName).style.display = "block";
 }
 
 const AllDone = () => {
