@@ -1,7 +1,8 @@
 # Rive PNG Sequence Renderer
-This is a temporary replacement for the Cloud Render feature, which allows you to export Rive animation as video.
+This is a website for rendering Rive animation as PNG Image Sequence. This can act as a temporary replacement for the Cloud Render feature, which allows you to export Rive animation as video.
+
 ## Steps to use
-1. Go to the [webpage](https://covector.github.io/rive-png-renderer/)
+1. Go to the website: [https://covector.github.io/rive-png-renderer/](https://covector.github.io/rive-png-renderer/)
 
 ![step 1](README_images/step1.png)
 
