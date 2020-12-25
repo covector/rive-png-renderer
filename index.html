@@ -7,11 +7,19 @@
 </head>
 <body>
     <form>
-      <input type="file" id="rivFile">
-      <input type="text" id="animationName">
+      <label for="rivFile">Select .riv files: </label><br />
+      <input type="file" id="rivFile"><br />
+      <hr />
+      <label for="animationName">Type in animation name(e.g. idle): </label><br />
+      <input type="text" id="animationName" value="Untitled 1"><br />
+      <hr />
+      <label for="size">Choose resolution of render. This number is multiplied with the artboard resolution you chose.(e.g. 1.5): </label><br />
+      <input type="text" id="size" value="1">
     </form>
-    <button onclick="Render()">Render</button>
-    <canvas id="riveCanvas" width=1024 height=1024 style="display: none"></canvas>
+    <hr />
+    <button id="renderButton" onclick="Render()">Render</button>
+    <div id="status"></div>
+    <canvas id="riveCanvas" style="display: none"></canvas>
 </body>
 <script src="https://unpkg.com/rive-canvas@0.6.7/rive.js"></script>
 <script src="lib/jszip.js"></script>
