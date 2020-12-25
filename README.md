@@ -2,9 +2,9 @@
 ## Steps to use
 1. Go to the [webpage](https://covector.github.io/rive-png-renderer/)
 2. Select a .riv file
-3. Type the animation name into the text field
-4. Press Render button
-5. Wait for a while (No loading screen for now)
+3. Type the animation name
+4. Type the resolution scale
+5. Press Render button
 6. Download will start automatically
 
 ## Dependencies
@@ -14,4 +14,3 @@
 
 ## TODO Features
 - Multiple Files Upload
-- More Intuitive UI
