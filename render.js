@@ -47,7 +47,6 @@ const RenderIndie = (rive, fileName) => new Promise((res, rej) => {
         // sacrifice a little performance for user friendliness
         let i = 0;
         var forLoop = setInterval(()=>{
-            i++
             if (i < duration + 1){
                 Progress(fileName, i + 1, duration + 1)
                 // update canvas
@@ -82,6 +81,7 @@ const RenderIndie = (rive, fileName) => new Promise((res, rej) => {
                     return;
                 });
             }
+            i++
         },1);
     });
 });
@@ -138,7 +138,7 @@ const AddFile = (fileName) => {
 
     let animationName = "animationName_"+fileName;
     let animationNameLabel = document.createElement("LABEL");
-    animationNameLabel.textContent = "Type in animation name(e.g. idle): "; 
+    animationNameLabel.textContent = "Type in animation name (e.g. idle): "; 
     animationNameLabel.for = animationName;
     let animationNameInput = document.createElement("INPUT");
     animationNameInput.type = "text";
@@ -147,7 +147,7 @@ const AddFile = (fileName) => {
 
     let size = "size_"+fileName;
     let sizeLabel = document.createElement("LABEL");
-    sizeLabel.textContent = "Resolution multiplier of the render. This number is multiplied with the artboard resolution you chose.(e.g. 1.5): "; 
+    sizeLabel.textContent = "Resolution multiplier of the render. This number is multiplied with the artboard resolution you chose. (e.g. 1.5): "; 
     sizeLabel.for = size;
     let sizeInput = document.createElement("INPUT");
     sizeInput.type = "text";
