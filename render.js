@@ -14,8 +14,8 @@ const Render = () => {
     }
     new Promise (async (res, rej) => {
         try{if (format != "png" && !loaded){
-            loaded = true;
             await ffmpeg.load();
+            loaded = true;
         }}
         catch(err){
             alert("Your browser does not support video export (Only Chrome supports ffmpeg export)");
