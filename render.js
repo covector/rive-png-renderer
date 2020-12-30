@@ -1,59 +1,82 @@
+const { createFFmpeg, fetchFile } = FFmpeg;
+const ffmpeg = createFFmpeg({ log: false });
+let loaded = false;
+
 const Render = () => {
     Start();
-    Rive({
-        locateFile: (file) => 'https://unpkg.com/rive-canvas@0.6.7/' + file,
-    }).then((rive) =>{
-        for (let i = 0; i < fileNames.length; i++){
-            RenderIndie(rive, fileNames[i]).then((fileName)=>{
-                Done(fileName);
-            }, (fileName) =>{
-                Invalid(fileName);
-            });
+    let format;
+    let formats = document.getElementsByName("format");
+    for (let i = 0; i < formats.length; i++){
+        if (formats[i].checked){
+            format = formats[i].value;
+            break;
         }
+    }
+    new Promise (async (res, rej) => {
+        try{if (format != "png" && !loaded){
+            loaded = true;
+            await ffmpeg.load();
+        }}
+        catch(err){
+            alert("Your browser does not support video export (Only Chrome supports ffmpeg export)");
+            return;
+        }
+        res();
+    }).then(()=>Rive({
+        locateFile: (file) => 'https://unpkg.com/rive-canvas@0.6.7/' + file,
+    })).then((rive) =>{
+        for (let i = 0; i < fileNames.length; i++){
+            RenderIndie(rive, fileNames[i], format);
+        } 
     });
 };
 
-const RenderIndie = (rive, fileName) => new Promise((res, rej) => {
+const RenderIndie = async (rive, fileName, format) => {
     StartIndie(fileName);
     // load animation
-    FileToUint8Array(files[fileName]).then((byte) => {
-        let file = rive.load(byte);
-        let artboard = file.defaultArtboard();
-        let animationName = document.getElementById("animationName_"+fileName).value;
-        let anim = artboard.animation(animationName);
-        if (!anim){
-            document.getElementById("status_"+fileName).textContent = "Invalid animation name"
-            rej(fileName);
-            return;
-        }
-        let Instance = new rive.LinearAnimationInstance(anim);
-        let dim = artboard.bounds;
-        let resMult = parseFloat(document.getElementById("size_"+fileName).value);
-        if (!resMult || resMult < 0){
-            document.getElementById("status_"+fileName).textContent = "Invalid resolution multiplier"
-            rej(fileName);
-            return;
-        }
-        let fps = parseFloat(document.getElementById("fps_"+fileName).value);
-        if (!fps || fps < 0){
-            document.getElementById("status_"+fileName).textContent = "Invalid frame per second"
-            rej(fileName);
-            return;
-        }
-        let canvas = document.createElement("CANVAS");
-        canvas.width = dim.maxX * resMult;
-        canvas.height = dim.maxY * resMult;
-        let ctx = canvas.getContext('2d');
-        let renderer = new rive.CanvasRenderer(ctx);
-        // loop through animation and save to zip
-        let duration = anim.duration / anim.fps; // in seconds
-        let totalFrame = fps * duration;
-        let digit = Math.ceil(Math.log10(totalFrame));
-        let zip = new JSZip();
-        let imgseq = zip.folder("imgseq");
-        // sacrifice a little performance for displaying progress
-        let i = 0;
-        var forLoop = setInterval(()=>{
+    let byte = await FileToUint8Array(files[fileName])
+    let file = rive.load(byte);
+    let artboard = file.defaultArtboard();
+    let animationName = document.getElementById("animationName_"+fileName).value;
+    let anim = artboard.animation(animationName);
+    if (!anim){
+        document.getElementById("status_"+fileName).textContent = "Invalid animation name"
+        Invalid(fileName);
+        return;
+    }
+    let Instance = new rive.LinearAnimationInstance(anim);
+    let dim = artboard.bounds;
+    let resMult = parseFloat(document.getElementById("size_"+fileName).value);
+    if (!resMult || resMult < 0){
+        document.getElementById("status_"+fileName).textContent = "Invalid resolution multiplier"
+        Invalid(fileName);
+        return;
+    }
+    let fps = parseFloat(document.getElementById("fps_"+fileName).value);
+    if (!fps || fps < 0){
+        document.getElementById("status_"+fileName).textContent = "Invalid frame per second"
+        Invalid(fileName);
+        return;
+    }
+    let canvas = document.createElement("CANVAS");
+    canvas.width = dim.maxX * resMult;
+    canvas.height = dim.maxY * resMult;
+    let ctx = canvas.getContext('2d');
+    let renderer = new rive.CanvasRenderer(ctx);
+    // loop through animation and save to zip
+    let duration = anim.duration / anim.fps; // in seconds
+    let totalFrame = fps * duration;
+    let digit = Math.ceil(Math.log10(totalFrame));
+    let zip;
+    let imgseq;
+    if (format == "png"){
+        zip = new JSZip();
+        imgseq = zip.folder("imgseq");
+    }
+    // sacrifice a little performance for displaying progress
+    let i = 0;
+    await new Promise((res, rej) => {
+        let forLoop = setInterval(()=>{
             if (i < totalFrame + 1){
                 Progress(fileName, i + 1, totalFrame + 1)
                 // update canvas
@@ -74,24 +97,67 @@ const RenderIndie = (rive, fileName) => new Promise((res, rej) => {
                 // save image
                 let imgData = canvas.toDataURL("image/png");
                 img = imgData.match(/(?<=base64,)..*/)[0];
-                imgseq.file(Pad(i, digit)+".png", img, {base64: true}); 
+                if (format == "png"){
+                    imgseq.file(Pad(i, digit)+".png", img, {base64: true}); 
+                }
+                else{
+                    ffmpeg.FS('writeFile', `${fileName}_${Pad(i, digit)}.png`, Uint8Array.from(atob(img), c => c.charCodeAt(0)));
+                }
             }
             else{
                 clearInterval(forLoop);
                 canvas.remove();
-                // callback
-                Zipping(fileName);
-                zip.generateAsync({type:"blob"})
-                .then(function(content) {
-                    saveAs(content, fileName+"_render.zip");
-                    res(fileName);
-                    return;
-                });
+                res("Done");
             }
             i++
         },1);
     });
-});
+    // Wrap things up
+    if (format == "png"){
+        Zipping(fileName);
+        await ToImage(zip, fileName);
+        Done(fileName);
+    }
+    else{
+        Queuing(fileName);
+        AddToQueue(digit, format, fps, fileName);
+    }
+    return;
+};
+
+const ToImage = async (zip, fileName) => {
+    let content = await zip.generateAsync({type:"blob"});
+    await saveAs(content, fileName+"_render.zip");
+}
+
+let renderQueue = [];
+const AddToQueue = async (digit, format, fps, fileName) => {
+    renderQueue.push({digit, format, fps, fileName});
+    if (renderQueue.length == 1){
+        RenderVideoQueue();
+    }
+}
+const RenderVideoQueue = async () => {
+    let info = renderQueue[0];
+    ffmpeg.setProgress(({ ratio }) => {
+        let fixRatio = ratio > 1 || ratio < 0 ? 0 : ratio;
+        let text = `Converting to Video ${Math.round(100 * fixRatio)} %`;
+        document.getElementById("status_"+info.fileName).textContent = text;
+    });
+    await ToVideo(info.digit, info.format, info.fps, info.fileName);
+    renderQueue.splice(0, 1);
+    Done(info.fileName);
+    if (renderQueue.length){
+        RenderVideoQueue();
+    }
+}
+
+const ToVideo = async (digit, format, fps, fileName) => {
+    await ffmpeg.run('-framerate', fps.toString(), '-i', `${fileName}_%0${digit}d.png`, '-crf', '1', '-pix_fmt', 'yuv420p', `${fileName}_render.${format}`);
+    const data = ffmpeg.FS('readFile', `${fileName}_render.${format}`);
+    let type = format=="gif" ? 'image/gif' : 'video/mp4';
+    await saveAs(new Blob([data.buffer], { type: type }), `${fileName}_render.${format}`);
+}
 
 const FileToUint8Array = (file) => new Promise((res, rej) => {
     // a code from stack overflow idk what does it do
@@ -111,7 +177,7 @@ const FileToUint8Array = (file) => new Promise((res, rej) => {
 
 const Pad = (number, digit) => {
     let stringOut = number.toString();
-    while(stringOut.length <= digit){
+    while(stringOut.length < digit){
         stringOut = "0"+stringOut;
     }
     return stringOut;
@@ -227,6 +293,10 @@ const Progress = (fileName, current, total) => {
 
 const Zipping = (fileName) => {
     document.getElementById("status_"+fileName).textContent = "Zipping...";
+}
+
+const Queuing = (fileName) => {
+    document.getElementById("status_"+fileName).textContent = "Waiting for converting to video...";
 }
 
 const Done = (fileName) => {

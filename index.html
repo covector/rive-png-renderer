@@ -10,6 +10,13 @@
     <form>
       <label for="rivFile">Append .riv files to render queue: </label><br />
       <input type="file" id="rivFile" accept=".riv" onchange="ChoseFiles(this.files)" multiple><br /><br />
+      Export as (mp4 is only supported by Chrome):<br />
+      <input type="radio" id="png" name="format" value="png" checked>
+      <lable for="png">PNG</lable>
+      <input type="radio" id="mp4" name="format" value="mp4">
+      <lable for="png">MP4</lable>
+      <!-- <input type="radio" id="gif" name="format" value="gif">
+      <lable for="png">GIF</lable> -->
     </form>
     <hr />
     <div id="fileList"></div>
@@ -18,6 +25,7 @@
     <canvas id="riveCanvas" style="display: none"></canvas>
 </body>
 <script src="https://unpkg.com/rive-canvas@0.6.7/rive.js"></script>
+<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.9.5/dist/ffmpeg.min.js"></script>
 <script src="lib/jszip.js"></script>
 <script src="lib/FileSaver.js"></script>
 <script src="render.js"></script>
